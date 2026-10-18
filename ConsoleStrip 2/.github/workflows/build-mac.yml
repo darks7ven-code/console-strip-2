@@ -1,0 +1,25 @@
+name: Build macOS plugin
+on:
+  workflow_dispatch:
+  push:
+jobs:
+  build:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure
+        run: cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_OSX_ARCHITECTURES="arm64;x86_64"
+      - name: Build
+        run: cmake --build build --config Release -j4
+      - name: Package
+        run: |
+          mkdir out
+          cp -R "build/ConsoleStrip_artefacts/Release/VST3/Console Strip.vst3" out/
+          cp -R "build/ConsoleStrip_artefacts/Release/AU/Console Strip.component" out/
+          codesign --force --deep -s - "out/Console Strip.vst3"
+          codesign --force --deep -s - "out/Console Strip.component"
+          ditto -c -k --keepParent out ConsoleStrip-macOS.zip
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ConsoleStrip-macOS
+          path: ConsoleStrip-macOS.zip
